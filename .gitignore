@@ -1,0 +1,16 @@
+# Env files
+.env
+.env.*
+
+orange_hrm_env/
+
+
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+
+
+venv/
+env/
