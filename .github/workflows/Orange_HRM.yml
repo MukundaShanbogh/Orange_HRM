@@ -1,0 +1,117 @@
+name: Orange HRM Tests
+
+on:
+  workflow_dispatch:
+
+  # Scheduled runs (GitHub Actions uses UTC). These entries run at 06:00 IST and 13:00 IST
+  # Conversion: IST = UTC+5:30 -> 06:00 IST = 00:30 UTC, 13:00 IST = 07:30 UTC
+#  schedule:
+#    - cron: '30 0 * * 1-6'   # 06:00 IST (00:30 UTC) Mon-Sat
+#    - cron: '30 7 * * 1-6'   # 13:00 IST (07:30 UTC) Mon-Sat
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+
+  e2e-tests:
+
+    runs-on: ubuntu-latest
+
+#    env:
+
+
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.6'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install playwright allure-pytest
+
+      - name: Install Playwright Chromium
+        run: playwright install --with-deps chromium
+
+      - name: Run Tests
+        run: |
+          python -m pytest \
+          --browser chromium \
+          --alluredir=allure-results
+
+#      # Remove old/corrupted history
+#      - name: Clean Old Allure History
+#        if: always()
+#        run: |
+#          rm -rf allure-history
+#          rm -rf allure-report
+
+      # Generate fresh Allure report
+#      - name: Generate Allure Report
+#        if: always()
+#        uses: simple-elf/allure-report-action@master
+#        with:
+#          allure_results: allure-results
+#          allure_report: allure-report
+#          allure_history: allure-history
+#
+#      # Configure GitHub Pages
+#      - name: Setup GitHub Pages
+#        if: always()
+#        uses: actions/configure-pages@v5
+
+      # Upload report artifact
+#      - name: Upload GitHub Pages Artifact
+#        if: always()
+#        uses: actions/upload-pages-artifact@v3
+#        with:
+#          path: allure-report
+
+      # Deploy report
+#      - name: Deploy to GitHub Pages
+#        if: always()
+#        id: deployment
+#        uses: actions/deploy-pages@v4
+
+#      # Send mail only if tests fail
+#      - name: Send Failure Email
+#        if: ${{ failure() }}
+#        uses: dawidd6/action-send-mail@v3
+#        with:
+#          server_address: smtp.gmail.com
+#          server_port: 465
+#          secure: true
+#
+#          username: ${{ secrets.EMAIL_USERNAME }}
+#          password: ${{ secrets.EMAIL_PASSWORD }}
+#
+#          subject: "Automation Test Failed"
+#
+#          to: ${{ secrets.TEAM_EMAILS }}
+#
+#          from: GitHub Actions
+#
+#          body: |
+#            Automation test execution failed.
+#
+#            Repository:
+#            ${{ github.repository }}
+#
+#            Workflow:
+#            ${{ github.workflow }}
+#
+#            Allure Report:
+#            https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+#
+#            Workflow Run:
+#            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
