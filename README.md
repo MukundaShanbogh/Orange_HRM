@@ -127,9 +127,9 @@ pytest --headed
 
 ### Login Module
 
-* Valid Login
 * Invalid Login
 * Empty Credentials Validation
+* Valid Login
 * Logout Functionality
 
 ### Employee Management
