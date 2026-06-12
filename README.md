@@ -156,9 +156,7 @@ Screenshots for failed tests are stored in the screenshots directory.
 * API Automation Integration
 * GitHub Actions CI/CD
 * Parallel Execution
-* Docker Support
-* Jenkins Integration
-* Database Validation
+* cross platform 
 
 ## Author
 
