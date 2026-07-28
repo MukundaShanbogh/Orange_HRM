@@ -1,5 +1,3 @@
-import time
-import pytest
 from playwright.sync_api import expect
 from config.config import Config
 
@@ -26,19 +24,17 @@ class Login:
         password.fill(Config.password)
         login_btn = self.pages.get_by_role("button",name=ll.login)
         login_btn.click()
-        expect(self.pages).to_have_url(Config.Base_url+"/web/index.php/dashboard/index")
+        expect(self.pages).to_have_url("https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index")
 
 
-
-    def invalid_login(self):
+    def invalid_login(self,username,password):
         ll = Login_locators()
         user_name = self.pages.get_by_placeholder(ll.user_name)
-        user_name.fill("gfdtdiyt")
-        password = self.pages.get_by_placeholder(ll.password)
-        password.fill("gftu")
+        user_name.fill(username)
+        password_locator = self.pages.get_by_placeholder(ll.password)
+        password_locator.fill(password)
         login_btn = self.pages.get_by_role("button", name=ll.login)
         login_btn.click()
-        time.sleep(3)
         expect(self.pages.get_by_text(ll.invalid_credentials_txt)).to_have_text("Invalid credentials")
 
 
@@ -50,7 +46,6 @@ class Login:
         password.fill("")
         login_btn = self.pages.get_by_role("button", name=ll.login)
         login_btn.click()
-        time.sleep(2)
         expect(self.pages.get_by_text(ll.required).first).to_be_visible()
 
     def logout(self):

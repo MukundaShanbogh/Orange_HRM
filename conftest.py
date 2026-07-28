@@ -1,8 +1,11 @@
-from config.config import Config
 import pytest
 
-def praser_adoption(praser):
-    praser.addoption("--browser",
+from config.config import Config
+
+
+
+def pytest_addoption(parser):
+    parser.addoption("--browser_type",
                      action="store",
                      default="chromium",
                      help="chromium, firefox or webkit")
@@ -20,7 +23,7 @@ def pages(playwright,request):
         browser_engine=playwright.chromium
     
 
-    browser =browser_engine.launch(headless=False)
+    browser =browser_engine.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
     page.goto(Config.Base_url)
