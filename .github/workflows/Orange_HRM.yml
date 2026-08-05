@@ -2,12 +2,9 @@ name: Orange HRM Tests
 
 on:
   workflow_dispatch:
-
-  # Scheduled runs (GitHub Actions uses UTC). These entries run at 06:00 IST and 13:00 IST
-  # Conversion: IST = UTC+5:30 -> 06:00 IST = 00:30 UTC, 13:00 IST = 07:30 UTC
-#  schedule:
-#    - cron: '30 0 * * 1-6'   # 06:00 IST (00:30 UTC) Mon-Sat
-#    - cron: '30 7 * * 1-6'   # 13:00 IST (07:30 UTC) Mon-Sat
+  # schedule:
+  #   - cron: '30 0 * * 1-6'   # 06:00 IST (00:30 UTC) Mon-Sat
+  #   - cron: '30 7 * * 1-6'   # 13:00 IST (07:30 UTC) Mon-Sat
 
 permissions:
   contents: read
@@ -15,103 +12,102 @@ permissions:
   id-token: write
 
 jobs:
-
+  # =========================================================================
+  # JOB 1: TEST EXECUTION (Runs 4 parallel machines)
+  # =========================================================================
   e2e-tests:
-
     runs-on: ubuntu-latest
+    
+    # Executes everything inside the pre-built Playwright image
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
 
-#    env:
-
-
+    strategy:
+      fail-fast: false # Prevents cancelling other shards if one fails
+      matrix:
+        shard: [0, 1, 2, 3]
 
     steps:
-
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12.6'
+      - name: Install Python Dependencies
+        # Make sure pytest-xdist and pytest-shard are in your requirements.txt
+        run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install playwright allure-pytest
-
-      - name: Install Playwright Chromium
-        run: playwright install --with-deps chromium
-
-      - name: Run Tests
-        run: |
-          python -m pytest \
-          --browser chromium \
+      - name: Run Tests (Sharded & Parallel)
+        # --shard-id picks the chunk, -n auto uses all CPU cores
+        run: >
+          python -m pytest 
+          --browser chromium 
+          --shard-id=${{ matrix.shard }} 
+          --shard-count=4 
+          -n auto 
           --alluredir=allure-results
 
-#      # Remove old/corrupted history
-#      - name: Clean Old Allure History
-#        if: always()
-#        run: |
-#          rm -rf allure-history
-#          rm -rf allure-report
+      - name: Upload Allure Results Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-shard-${{ matrix.shard }}
+          path: allure-results
+          retention-days: 1
 
-      # Generate fresh Allure report
-#      - name: Generate Allure Report
-#        if: always()
-#        uses: simple-elf/allure-report-action@master
-#        with:
-#          allure_results: allure-results
-#          allure_report: allure-report
-#          allure_history: allure-history
-#
-#      # Configure GitHub Pages
-#      - name: Setup GitHub Pages
-#        if: always()
-#        uses: actions/configure-pages@v5
+  # =========================================================================
+  # JOB 2: REPORTING & NOTIFICATION (Runs once after tests finish)
+  # =========================================================================
+  generate-report:
+    needs: e2e-tests # Waits for Job 1 to finish completely
+    if: always()     # Runs even if tests failed
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # Upload report artifact
-#      - name: Upload GitHub Pages Artifact
-#        if: always()
-#        uses: actions/upload-pages-artifact@v3
-#        with:
-#          path: allure-report
+      # This downloads results from all 4 shards and merges them into one folder
+      - name: Download all Allure Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-shard-*
+          path: allure-results
+          merge-multiple: true
 
-      # Deploy report
-#      - name: Deploy to GitHub Pages
-#        if: always()
-#        id: deployment
-#        uses: actions/deploy-pages@v4
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          allure_report: allure-report
+          allure_history: allure-history
 
-#      # Send mail only if tests fail
-#      - name: Send Failure Email
-#        if: ${{ failure() }}
-#        uses: dawidd6/action-send-mail@v3
-#        with:
-#          server_address: smtp.gmail.com
-#          server_port: 465
-#          secure: true
-#
-#          username: ${{ secrets.EMAIL_USERNAME }}
-#          password: ${{ secrets.EMAIL_PASSWORD }}
-#
-#          subject: "Automation Test Failed"
-#
-#          to: ${{ secrets.TEAM_EMAILS }}
-#
-#          from: GitHub Actions
-#
-#          body: |
-#            Automation test execution failed.
-#
-#            Repository:
-#            ${{ github.repository }}
-#
-#            Workflow:
-#            ${{ github.workflow }}
-#
-#            Allure Report:
-#            https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
-#
-#            Workflow Run:
-#            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # Triggers ONLY if the e2e-tests job reported a failure
+      - name: Send Failure Email
+        if: ${{ needs.e2e-tests.result == 'failure' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Automation Test Failed"
+          to: ${{ secrets.TEAM_EMAILS }}
+          from: GitHub Actions
+          body: |
+            Automation test execution failed.
+            Repository: ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Allure Report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+            Workflow Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

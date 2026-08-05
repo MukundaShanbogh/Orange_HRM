@@ -11,7 +11,7 @@ def pytest_addoption(parser):
                      help="chromium, firefox or webkit")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def pages(playwright,request):
     browser_type=request.config.getoption("--browser_type").lower()
 

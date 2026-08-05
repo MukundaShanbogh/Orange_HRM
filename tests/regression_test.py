@@ -21,4 +21,6 @@ class Test_Regression:
 
     def test_logout(self, pages):
         lgn = Login(pages)
+        lgn.valid_login()
         lgn.logout()
+        
