@@ -37,9 +37,9 @@ jobs:
 
       - name: Run Tests (Sharded & Parallel)
         env:
-          Base_url : ${{ secrets.BASE_URL }}
-          User_Name : ${{ secrets.USER_NAME }}
-          Password : ${{ secrets.PASSWORD }}
+          BASE_URL : ${{ secrets.BASE_URL }}
+          USER_NAME : ${{ secrets.USER_NAME }}
+          PASSWORD : ${{ secrets.PASSWORD }}
         run: >
           python -m pytest 
           --browser chromium 
