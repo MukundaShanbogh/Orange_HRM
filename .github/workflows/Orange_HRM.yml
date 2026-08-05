@@ -36,12 +36,11 @@ jobs:
         run: pip install --no-cache-dir -r requirements.txt
 
       - name: Run Tests (Sharded & Parallel)
-        # --shard-id picks the chunk, -n auto uses all CPU cores
         run: >
           python -m pytest 
           --browser chromium 
           --shard-id=${{ matrix.shard }} 
-          --shard-count=4 
+          --num-shards=4 
           -n auto 
           --alluredir=allure-results
 
