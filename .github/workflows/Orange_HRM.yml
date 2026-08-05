@@ -20,7 +20,7 @@ jobs:
     
     # Executes everything inside the pre-built Playwright image
     container:
-      image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+      image: mcr.microsoft.com/playwright/python:v1.58.0-jammy
 
     strategy:
       fail-fast: false # Prevents cancelling other shards if one fails
